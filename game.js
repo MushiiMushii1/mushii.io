@@ -212,52 +212,90 @@ function update() {
 function showDialogue(triggerX, triggerY, text) {
   // Position bubble toward the middle (interpolate x toward 400)
   const bubbleX = Phaser.Math.Linear(triggerX, 400, 0.5); // Halfway to center
-  const bubbleY = triggerY - 40; // Slightly above trigger point
+  const bubbleY = triggerY - 30; // Adjusted for smaller size
 
   // Create word bubble with pointy extensions
   const graphics = this.add.graphics();
   graphics.fillStyle(0x000000, 0.8);
   graphics.lineStyle(2, 0xffffff);
 
-  // Main bubble body
-  graphics.fillRoundedRect(bubbleX - 130, bubbleY - 20, 260, 40, 10);
-  graphics.strokeRoundedRect(bubbleX - 130, bubbleY - 20, 260, 40, 10);
+  // Main bubble body (smaller)
+  graphics.fillRoundedRect(bubbleX - 97.5, bubbleY - 15, 195, 30, 8); // 75% of 260x40
+  graphics.strokeRoundedRect(bubbleX - 97.5, bubbleY - 15, 195, 30, 8);
 
-  // First triangular extension (closer to bubble)
-  const flag1BaseLeft = bubbleX - 10; // Base near bubble center
-  const flag1BaseRight = bubbleX + 10;
-  const flag1TipX = Phaser.Math.Linear(triggerX, bubbleX, 0.25); // Tip 25% toward trigger
-  const flag1TipY = bubbleY + 20; // Extends 20px below bubble
-  graphics.fillTriangle(
-    flag1BaseLeft, bubbleY + 20, // Bottom left of bubble
-    flag1BaseRight, bubbleY + 20, // Bottom right of bubble
-    flag1TipX, flag1TipY // Tip pointing toward trigger
-  );
-  graphics.strokeTriangle(
-    flag1BaseLeft, bubbleY + 20,
-    flag1BaseRight, bubbleY + 20,
-    flag1TipX, flag1TipY
-  );
+  // Determine flag positioning based on text
+  if (text === "Welcome home." || text === "We've been looking for you.") {
+    // Flags point toward triggerX
+    const isLeft = triggerX < bubbleX; // Trigger is left of bubble
+    const flagBaseOffset = isLeft ? -80 : 80; // Shift base to left (-80) or right (+80) side of bubble
 
-  // Second triangular extension (further down)
-  const flag2BaseLeft = flag1TipX - 8; // Slightly narrower base
-  const flag2BaseRight = flag1TipX + 8;
-  const flag2TipX = Phaser.Math.Linear(triggerX, bubbleX, 0.15); // Tip 15% toward trigger
-  const flag2TipY = flag1TipY + 15; // 15px below first tip
-  graphics.fillTriangle(
-    flag2BaseLeft, flag1TipY,
-    flag2BaseRight, flag1TipY,
-    flag2TipX, flag2TipY
-  );
-  graphics.strokeTriangle(
-    flag2BaseLeft, flag1TipY,
-    flag2BaseRight, flag1TipY,
-    flag2TipX, flag2TipY
-  );
+    // First triangular extension
+    const flag1BaseLeft = bubbleX + flagBaseOffset - 7.5; // 15px wide base
+    const flag1BaseRight = bubbleX + flagBaseOffset + 7.5;
+    const flag1TipX = Phaser.Math.Linear(bubbleX, triggerX, 0.15); // Tip 15% toward trigger
+    const flag1TipY = bubbleY + 15; // 15px below bubble
+    graphics.fillTriangle(
+      flag1BaseLeft, bubbleY + 15,
+      flag1BaseRight, bubbleY + 15,
+      flag1TipX, flag1TipY
+    );
+    graphics.strokeTriangle(
+      flag1BaseLeft, bubbleY + 15,
+      flag1BaseRight, bubbleY + 15,
+      flag1TipX, flag1TipY
+    );
+
+    // Second triangular extension
+    const flag2BaseLeft = flag1TipX - 6; // 12px wide base centered on first tip
+    const flag2BaseRight = flag1TipX + 6;
+    const flag2TipX = Phaser.Math.Linear(bubbleX, triggerX, 0.25); // Tip 25% toward trigger
+    const flag2TipY = flag1TipY + 11; // 11px below first tip
+    graphics.fillTriangle(
+      flag2BaseLeft, flag1TipY,
+      flag2BaseRight, flag1TipY,
+      flag2TipX, flag2TipY
+    );
+    graphics.strokeTriangle(
+      flag2BaseLeft, flag1TipY,
+      flag2BaseRight, flag1TipY,
+      flag2TipX, flag2TipY
+    );
+  } else {
+    // Centered flags for "Do you feel it?"
+    const flag1BaseLeft = bubbleX - 7.5; // 15px wide
+    const flag1BaseRight = bubbleX + 7.5;
+    const flag1TipX = bubbleX; // Centered
+    const flag1TipY = bubbleY + 15; // 15px below bubble
+    graphics.fillTriangle(
+      flag1BaseLeft, bubbleY + 15,
+      flag1BaseRight, bubbleY + 15,
+      flag1TipX, flag1TipY
+    );
+    graphics.strokeTriangle(
+      flag1BaseLeft, bubbleY + 15,
+      flag1BaseRight, bubbleY + 15,
+      flag1TipX, flag1TipY
+    );
+
+    const flag2BaseLeft = bubbleX - 6; // 12px wide
+    const flag2BaseRight = bubbleX + 6;
+    const flag2TipX = bubbleX; // Centered
+    const flag2TipY = flag1TipY + 11; // 11px below first tip
+    graphics.fillTriangle(
+      flag2BaseLeft, flag1TipY,
+      flag2BaseRight, flag1TipY,
+      flag2TipX, flag2TipY
+    );
+    graphics.strokeTriangle(
+      flag2BaseLeft, flag1TipY,
+      flag2BaseRight, flag1TipY,
+      flag2TipX, flag2TipY
+    );
+  }
 
   graphics.setDepth(7);
 
-  const dialogueText = this.add.text(bubbleX, bubbleY, text, { font: '16px monospace', color: '#ffffff' }).setOrigin(0.5, 0.5).setDepth(8);
+  const dialogueText = this.add.text(bubbleX, bubbleY, text, { font: '12px monospace', color: '#ffffff' }).setOrigin(0.5, 0.5).setDepth(8);
 
   // Remove after 3 seconds
   this.time.delayedCall(3000, () => {
