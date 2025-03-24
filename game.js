@@ -16,21 +16,26 @@ const config = {
 const game = new Phaser.Game(config);
 
 function preload() {
-  this.load.image('forestBackground', 'https://i.imgur.com/c6Z2rEm.png');
+  this.load.image('forestBackground', 'https://i.imgur.com/M99tDtL.png');
+  this.load.image('frontBushes', 'https://i.imgur.com/d9Tn7k2.png');
+  this.load.image('bushes', 'https://i.imgur.com/sgEaJ4w.png');
   this.load.spritesheet('wanderer', 'https://i.imgur.com/E37vPhX.png', { frameWidth: 32, frameHeight: 32 });
   this.load.spritesheet('wanderer_right', 'https://i.imgur.com/r9i1FAA.png', { frameWidth: 32, frameHeight: 32 });
   this.load.spritesheet('wanderer_left', 'https://i.imgur.com/VpkFOhS.png', { frameWidth: 32, frameHeight: 32 });
   this.load.spritesheet('wanderer_up', 'https://i.imgur.com/SncQMew.png', { frameWidth: 32, frameHeight: 32 });
   this.load.spritesheet('amanita', 'https://i.imgur.com/HAwLwuU.png', { frameWidth: 32, frameHeight: 32 });
   this.load.spritesheet('spore', 'https://i.imgur.com/HEoiyr4.png', { frameWidth: 32, frameHeight: 32 });
+  this.load.spritesheet('twinkle', 'https://i.imgur.com/fXGvwUv.png', { frameWidth: 32, frameHeight: 32 });
   this.load.audio('backgroundMusic', 'https://mushiimushii1.github.io/mushii/basesong.wav');
   this.load.on('filecomplete-audio-backgroundMusic', () => console.log('Audio file loaded successfully'));
   this.load.on('loaderror', (file) => console.error('Audio load error:', file.key, file.src));
 }
 
 function create() {
-  this.add.image(400, 360, 'forestBackground').setDisplaySize(800, 720);
-  this.add.rectangle(400, 360, 780, 700).setStrokeStyle(5, 0x666666);
+  this.add.image(400, 360, 'forestBackground').setDisplaySize(800, 720).setDepth(0);
+  this.add.image(400, 360, 'bushes').setDisplaySize(800, 720).setDepth(1); // Bushes at depth 1
+  this.add.image(400, 360, 'frontBushes').setDisplaySize(800, 720).setDepth(3); // FrontBushes at depth 3
+  this.add.rectangle(400, 360, 780, 700).setStrokeStyle(5, 0x666666).setDepth(6); // UI at 6
 
   this.anims.create({ key: 'walk', frames: this.anims.generateFrameNumbers('wanderer', { start: 0, end: 1 }), frameRate: 10, repeat: -1 });
   this.anims.create({ key: 'walk_right', frames: this.anims.generateFrameNumbers('wanderer_right', { start: 0, end: 1 }), frameRate: 10, repeat: -1 });
@@ -38,31 +43,36 @@ function create() {
   this.anims.create({ key: 'walk_up', frames: this.anims.generateFrameNumbers('wanderer_up', { start: 0, end: 1 }), frameRate: 10, repeat: -1 });
   this.anims.create({ key: 'amanita_idle', frames: this.anims.generateFrameNumbers('amanita', { start: 0, end: 1 }), frameRate: 0.5, repeat: -1 });
   this.anims.create({ key: 'spore_float', frames: this.anims.generateFrameNumbers('spore', { start: 0, end: 7 }), frameRate: 5, repeat: -1 });
+  this.anims.create({ key: 'twinkle_glow', frames: this.anims.generateFrameNumbers('twinkle', { start: 0, end: 1 }), frameRate: 2, repeat: -1 });
 
-  this.wanderer = this.physics.add.sprite(400, 360, 'wanderer').setScale(2.5);
+  this.wanderer = this.physics.add.sprite(400, 360, 'wanderer').setScale(2.5).setDepth(4); // Start between layers
   this.wanderer.setCollideWorldBounds(true);
   this.cursors = this.input.keyboard.createCursorKeys();
 
   this.sporeCount = 0;
-  this.sporeText = this.add.text(20, 20, 'Spores: 0', { font: '20px monospace', color: '#ffffff' });
+  this.sporeText = this.add.text(20, 20, 'Spores: 0', { font: '20px monospace', color: '#ffffff' }).setDepth(7); // UI at 7
   this.spores = this.physics.add.group();
   for (let i = 0; i < 20; i++) {
-    let spore = this.spores.create(Math.random() * 700 + 50, Math.random() * (710 - 240) + 240, 'spore').setScale(1.25);
-    // Offset animation with random delay (0 to 1600ms)
+    let spore = this.spores.create(Math.random() * 700 + 50, Math.random() * (710 - 240) + 240, 'spore').setScale(1.25).setDepth(4);
     spore.anims.play({ key: 'spore_float', delay: Math.random() * 1600 }, true);
   }
   this.physics.add.overlap(this.wanderer, this.spores, collectSpore, (wanderer, spore) => {
     return Phaser.Math.Distance.Between(wanderer.x, wanderer.y, spore.x, spore.y) < 30;
   }, this);
 
-  this.amanita = this.physics.add.sprite(400, 186, 'amanita').setScale(2.5);
+  this.amanita = this.physics.add.sprite(400, 186, 'amanita').setScale(2.5).setDepth(2); // Start behind bushes
   this.amanita.setData('vibe', 5);
   this.amanita.anims.play('amanita_idle', true);
   this.physics.add.overlap(this.wanderer, this.amanita, resonate, (wanderer, amanita) => {
     return Phaser.Math.Distance.Between(wanderer.x, wanderer.y, amanita.x, amanita.y) < 40;
   }, this);
 
-  // Audio setup
+  this.twinkles = this.add.group();
+  for (let i = 0; i < 50; i++) {
+    let twinkle = this.twinkles.create(Math.random() * 800, Math.random() * 720, 'twinkle').setScale(1.5).setDepth(4);
+    twinkle.anims.play({ key: 'twinkle_glow', delay: Math.random() * 2000 }, true);
+  }
+
   try {
     this.backgroundMusic = this.sound.add('backgroundMusic', { loop: true, volume: 0.25 });
     console.log('Background music object created');
@@ -72,114 +82,30 @@ function create() {
     console.error('Failed to initialize background music:', e);
   }
 
-  // Start button
-  const button = this.add.rectangle(400, 360, 200, 80, 0x000000, 0.8);
+  const button = this.add.rectangle(400, 360, 200, 80, 0x000000, 0.8).setDepth(6);
   button.setStrokeStyle(2, 0xffffff);
-  const buttonText = this.add.text(400, 360, 'Click to Play', { font: '24px monospace', color: '#ffffff' }).setOrigin(0.5, 0.5);
+  const buttonText = this.add.text(400, 360, 'Click to Play', { font: '24px monospace', color: '#ffffff' }).setOrigin(0.5, 0.5).setDepth(7);
 
   this.gameStarted = false;
   this.input.keyboard.enabled = false;
 
   button.setInteractive();
   button.on('pointerdown', () => {
-    playMusic.call(this); // Initial attempt
+    playMusic.call(this);
     this.gameStarted = true;
     this.input.keyboard.enabled = true;
     button.destroy();
     buttonText.destroy();
     createJoystick.call(this);
   });
-}
 
-// Reusable function to play music
-function playMusic() {
-  if (!this.backgroundMusic) {
-    console.warn('Background music not initialized, attempting to reinitialize');
-    try {
-      this.backgroundMusic = this.sound.add('backgroundMusic', { loop: true, volume: 0.25 });
-      console.log('Background music reinitialized');
-    } catch (e) {
-      console.error('Failed to reinitialize background music:', e);
-      return;
-    }
-  }
-
-  if (this.sound.context.state === 'suspended') {
-    this.sound.context.resume().then(() => {
-      console.log('Audio context resumed');
-      if (!this.backgroundMusic.isPlaying) {
-        this.backgroundMusic.play();
-        console.log('Music started playing from resume');
-      } else {
-        console.log('Music already playing after resume');
-      }
-    }).catch(e => {
-      console.error('Failed to resume audio context:', e);
-      if (!this.backgroundMusic.isPlaying) {
-        this.backgroundMusic.play(); // Try anyway
-        console.log('Attempted to play music despite resume failure');
-      }
-    });
-  } else {
-    if (!this.backgroundMusic.isPlaying) {
-      this.backgroundMusic.play();
-      console.log('Music started playing directly');
-    } else {
-      console.log('Music is already playing');
-    }
-  }
-}
-
-function createJoystick() {
-  const joystickRadius = 50;
-  const knobRadius = 20;
-  const baseX = 100;
-  const baseY = this.scale.height - 100;
-
-  this.joystickBase = this.add.circle(baseX, baseY, joystickRadius, 0x666666, 0.7);
-  this.joystickBase.setStrokeStyle(2, 0xffffff);
-
-  this.joystickKnob = this.add.circle(baseX, baseY, knobRadius, 0x999999, 0.9);
-  this.joystickKnob.setStrokeStyle(2, 0xffffff);
-  this.joystickKnob.setInteractive();
-  this.input.setDraggable(this.joystickKnob);
-
-  this.joystick = {
-    active: false,
-    dx: 0,
-    dy: 0
-  };
-
-  this.joystickKnob.on('dragstart', () => {
-    console.log('Joystick drag started');
-    this.joystick.active = true;
-    playMusic.call(this); // Trigger music on drag
-  });
-
-  this.joystickKnob.on('drag', (pointer, dragX, dragY) => {
-    const dx = dragX - baseX;
-    const dy = dragY - baseY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance <= joystickRadius) {
-      this.joystickKnob.x = dragX;
-      this.joystickKnob.y = dragY;
-    } else {
-      const angle = Math.atan2(dy, dx);
-      this.joystickKnob.x = baseX + Math.cos(angle) * joystickRadius;
-      this.joystickKnob.y = baseY + Math.sin(angle) * joystickRadius;
-    }
-
-    this.joystick.dx = (this.joystickKnob.x - baseX) / joystickRadius;
-    this.joystick.dy = (this.joystickKnob.y - baseY) / joystickRadius;
-  });
-
-  this.joystickKnob.on('dragend', () => {
-    this.joystick.active = false;
-    this.joystick.dx = 0;
-    this.joystick.dy = 0;
-    this.joystickKnob.setPosition(baseX, baseY);
-  });
+  // Dialogue trigger setup (recurring)
+  this.dialogueTriggers = [
+    { x: 195, y: 346, text: "Do you feel it?" },
+    { x: 752, y: 478, text: "We've been looking for you." },
+    { x: 79, y: 245, text: "Welcome home." }
+  ];
+  this.dialogueCooldowns = this.dialogueTriggers.map(() => ({ lastTriggered: 0 })); // Cooldown tracking
 }
 
 function update() {
@@ -221,10 +147,7 @@ function update() {
       if (Math.abs(this.joystick.dx) > Math.abs(this.joystick.dy)) {
         if (this.joystick.dx > 0) movingRight = true;
         else movingLeft = true;
-      } else {
-        if (this.joystick.dy < 0) movingUp = true;
-        else isMoving = true;
-      }
+      } else if (this.joystick.dy < 0) movingUp = true;
     }
   }
 
@@ -237,6 +160,184 @@ function update() {
     this.wanderer.anims.stop();
     this.wanderer.setFrame(0);
   }
+
+  // Dynamic depth based on adjusted thresholds
+  const bushesThresholds = [228, 324, 453, 675];
+  const frontBushesThresholds = [261, 357, 485, 698];
+
+  const setDepthBasedOnThresholds = (obj) => {
+    const y = obj.y;
+
+    for (let i = 0; i < bushesThresholds.length; i++) {
+      const bushThreshold = bushesThresholds[i];
+      const frontThreshold = frontBushesThresholds[i];
+
+      if (y < bushThreshold) {
+        obj.setDepth(2); // Behind bushes
+        return;
+      }
+      if (y >= bushThreshold && y < frontThreshold) {
+        obj.setDepth(2); // Behind bushes, not yet at frontBushes
+        return;
+      }
+      if (y >= frontThreshold && (i === bushesThresholds.length - 1 || y < bushesThresholds[i + 1])) {
+        obj.setDepth(4); // Between bushes and frontBushes
+        return;
+      }
+    }
+
+    if (y >= frontBushesThresholds[frontBushesThresholds.length - 1]) {
+      obj.setDepth(5); // In front of both
+    }
+  };
+
+  setDepthBasedOnThresholds(this.wanderer);
+  this.spores.children.iterate(spore => setDepthBasedOnThresholds(spore));
+  setDepthBasedOnThresholds(this.amanita);
+  this.twinkles.children.iterate(twinkle => setDepthBasedOnThresholds(twinkle));
+
+  // Dialogue trigger logic (recurring with cooldown)
+  const currentTime = this.time.now;
+  const cooldownDuration = 5000; // 5 seconds cooldown
+
+  this.dialogueTriggers.forEach((trigger, index) => {
+    const distance = Phaser.Math.Distance.Between(this.wanderer.x, this.wanderer.y, trigger.x, trigger.y);
+    if (distance < 10 && currentTime - this.dialogueCooldowns[index].lastTriggered >= cooldownDuration) {
+      this.dialogueCooldowns[index].lastTriggered = currentTime;
+      showDialogue.call(this, trigger.x, trigger.y, trigger.text);
+    }
+  });
+}
+
+function showDialogue(triggerX, triggerY, text) {
+  // Position bubble toward the middle (interpolate x toward 400)
+  const bubbleX = Phaser.Math.Linear(triggerX, 400, 0.5); // Halfway to center
+  const bubbleY = triggerY - 40; // Slightly above trigger point
+
+  // Create word bubble with pointy extensions
+  const graphics = this.add.graphics();
+  graphics.fillStyle(0x000000, 0.8);
+  graphics.lineStyle(2, 0xffffff);
+
+  // Main bubble body
+  graphics.fillRoundedRect(bubbleX - 130, bubbleY - 20, 260, 40, 10);
+  graphics.strokeRoundedRect(bubbleX - 130, bubbleY - 20, 260, 40, 10);
+
+  // First triangular extension (closer to bubble)
+  const flag1BaseLeft = bubbleX - 10; // Base near bubble center
+  const flag1BaseRight = bubbleX + 10;
+  const flag1TipX = Phaser.Math.Linear(triggerX, bubbleX, 0.25); // Tip 25% toward trigger
+  const flag1TipY = bubbleY + 20; // Extends 20px below bubble
+  graphics.fillTriangle(
+    flag1BaseLeft, bubbleY + 20, // Bottom left of bubble
+    flag1BaseRight, bubbleY + 20, // Bottom right of bubble
+    flag1TipX, flag1TipY // Tip pointing toward trigger
+  );
+  graphics.strokeTriangle(
+    flag1BaseLeft, bubbleY + 20,
+    flag1BaseRight, bubbleY + 20,
+    flag1TipX, flag1TipY
+  );
+
+  // Second triangular extension (further down)
+  const flag2BaseLeft = flag1TipX - 8; // Slightly narrower base
+  const flag2BaseRight = flag1TipX + 8;
+  const flag2TipX = Phaser.Math.Linear(triggerX, bubbleX, 0.15); // Tip 15% toward trigger
+  const flag2TipY = flag1TipY + 15; // 15px below first tip
+  graphics.fillTriangle(
+    flag2BaseLeft, flag1TipY,
+    flag2BaseRight, flag1TipY,
+    flag2TipX, flag2TipY
+  );
+  graphics.strokeTriangle(
+    flag2BaseLeft, flag1TipY,
+    flag2BaseRight, flag1TipY,
+    flag2TipX, flag2TipY
+  );
+
+  graphics.setDepth(7);
+
+  const dialogueText = this.add.text(bubbleX, bubbleY, text, { font: '16px monospace', color: '#ffffff' }).setOrigin(0.5, 0.5).setDepth(8);
+
+  // Remove after 3 seconds
+  this.time.delayedCall(3000, () => {
+    graphics.destroy();
+    dialogueText.destroy();
+  });
+}
+
+function playMusic() {
+  if (!this.backgroundMusic) {
+    console.warn('Background music not initialized, attempting to reinitialize');
+    try {
+      this.backgroundMusic = this.sound.add('backgroundMusic', { loop: true, volume: 0.25 });
+      console.log('Background music reinitialized');
+    } catch (e) {
+      console.error('Failed to reinitialize background music:', e);
+      return;
+    }
+  }
+
+  if (this.sound.context.state === 'suspended') {
+    this.sound.context.resume().then(() => {
+      console.log('Audio context resumed');
+      if (!this.backgroundMusic.isPlaying) {
+        this.backgroundMusic.play();
+        console.log('Music started playing from resume');
+      }
+    }).catch(e => console.error('Failed to resume audio context:', e));
+  } else if (!this.backgroundMusic.isPlaying) {
+    this.backgroundMusic.play();
+    console.log('Music started playing directly');
+  }
+}
+
+function createJoystick() {
+  const joystickRadius = 50;
+  const knobRadius = 20;
+  const baseX = 100;
+  const baseY = this.scale.height - 100;
+
+  this.joystickBase = this.add.circle(baseX, baseY, joystickRadius, 0x666666, 0.7).setDepth(6);
+  this.joystickBase.setStrokeStyle(2, 0xffffff);
+
+  this.joystickKnob = this.add.circle(baseX, baseY, knobRadius, 0x999999, 0.9).setDepth(6);
+  this.joystickKnob.setStrokeStyle(2, 0xffffff);
+  this.joystickKnob.setInteractive();
+  this.input.setDraggable(this.joystickKnob);
+
+  this.joystick = { active: false, dx: 0, dy: 0 };
+
+  this.joystickKnob.on('dragstart', () => {
+    console.log('Joystick drag started');
+    this.joystick.active = true;
+    playMusic.call(this);
+  });
+
+  this.joystickKnob.on('drag', (pointer, dragX, dragY) => {
+    const dx = dragX - baseX;
+    const dy = dragY - baseY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance <= joystickRadius) {
+      this.joystickKnob.x = dragX;
+      this.joystickKnob.y = dragY;
+    } else {
+      const angle = Math.atan2(dy, dx);
+      this.joystickKnob.x = baseX + Math.cos(angle) * joystickRadius;
+      this.joystickKnob.y = baseY + Math.sin(angle) * joystickRadius;
+    }
+
+    this.joystick.dx = (this.joystickKnob.x - baseX) / joystickRadius;
+    this.joystick.dy = (this.joystickKnob.y - baseY) / joystickRadius;
+  });
+
+  this.joystickKnob.on('dragend', () => {
+    this.joystick.active = false;
+    this.joystick.dx = 0;
+    this.joystick.dy = 0;
+    this.joystickKnob.setPosition(baseX, baseY);
+  });
 }
 
 function collectSpore(wanderer, spore) {
@@ -254,9 +355,9 @@ function resonate(wanderer, amanita) {
       const graphics = this.add.graphics();
       graphics.fillStyle(0x000000, 0.8);
       graphics.lineStyle(2, 0xffffff);
-      graphics.fillRoundedRect(400 - 158, 360 - 30, 316, 60, 10);
-      graphics.strokeRoundedRect(400 - 158, 360 - 30, 316, 60, 10);
-      this.add.text(400, 360, 'Gaze beyond the veil....', { font: '20px monospace', color: '#ffffff' }).setOrigin(0.5, 0.5);
+      graphics.fillRoundedRect(400 - 158, 360 - 30, 316, 60, 10).setDepth(7);
+      graphics.strokeRect(400 - 158, 360 - 30, 316, 60, 10).setDepth(7);
+      this.add.text(400, 360, 'Gaze beyond the veil....', { font: '20px monospace', color: '#ffffff' }).setOrigin(0.5, 0.5).setDepth(8);
       amanita.destroy();
     } else {
       this.cameras.main.setTint(0xff00ff);
