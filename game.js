@@ -81,12 +81,12 @@ function create() {
 
   button.setInteractive();
   button.on('pointerdown', () => {
-    playMusic.call(this); // Initial attempt to play
+    playMusic.call(this); // Initial attempt
     this.gameStarted = true;
     this.input.keyboard.enabled = true;
     button.destroy();
     buttonText.destroy();
-    createJoystick.call(this);
+    createJoystick.call(this); // Only joystick, no debug button
   });
 }
 
@@ -152,7 +152,7 @@ function createJoystick() {
   this.joystickKnob.on('dragstart', () => {
     console.log('Joystick drag started');
     this.joystick.active = true;
-    playMusic.call(this); // Trigger music on drag start
+    playMusic.call(this); // Trigger music on drag
   });
 
   this.joystickKnob.on('drag', (pointer, dragX, dragY) => {
