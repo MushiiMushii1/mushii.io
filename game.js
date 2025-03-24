@@ -61,7 +61,7 @@ function create() {
     return Phaser.Math.Distance.Between(wanderer.x, wanderer.y, amanita.x, amanita.y) < 40;
   }, this);
 
-  // Audio setup with fallback
+  // Audio setup
   try {
     this.backgroundMusic = this.sound.add('backgroundMusic', { loop: true, volume: 0.25 });
     console.log('Background music object created');
@@ -81,17 +81,16 @@ function create() {
 
   button.setInteractive();
   button.on('pointerdown', () => {
-    playMusic.call(this);
+    playMusic.call(this); // Initial attempt to play
     this.gameStarted = true;
     this.input.keyboard.enabled = true;
     button.destroy();
     buttonText.destroy();
     createJoystick.call(this);
-    createDebugMusicButton.call(this);
   });
 }
 
-// Reusable function to play music with fallback
+// Reusable function to play music
 function playMusic() {
   if (!this.backgroundMusic) {
     console.warn('Background music not initialized, attempting to reinitialize');
@@ -151,7 +150,9 @@ function createJoystick() {
   };
 
   this.joystickKnob.on('dragstart', () => {
+    console.log('Joystick drag started');
     this.joystick.active = true;
+    playMusic.call(this); // Trigger music on drag start
   });
 
   this.joystickKnob.on('drag', (pointer, dragX, dragY) => {
@@ -177,20 +178,6 @@ function createJoystick() {
     this.joystick.dx = 0;
     this.joystick.dy = 0;
     this.joystickKnob.setPosition(baseX, baseY);
-  });
-}
-
-function createDebugMusicButton() {
-  const buttonX = 250;
-  const buttonY = this.scale.height - 50;
-  const debugButton = this.add.rectangle(buttonX, buttonY, 100, 40, 0x666666, 0.7);
-  debugButton.setStrokeStyle(2, 0xffffff);
-  const debugText = this.add.text(buttonX, buttonY, 'Play Music', { font: '16px monospace', color: '#ffffff' }).setOrigin(0.5, 0.5);
-
-  debugButton.setInteractive();
-  debugButton.on('pointerdown', () => {
-    console.log('Debug button pressed');
-    playMusic.call(this);
   });
 }
 
