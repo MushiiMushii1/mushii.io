@@ -24,7 +24,6 @@ function preload() {
   this.load.spritesheet('amanita', 'https://i.imgur.com/HAwLwuU.png', { frameWidth: 32, frameHeight: 32 });
   this.load.spritesheet('spore', 'https://i.imgur.com/HEoiyr4.png', { frameWidth: 32, frameHeight: 32 });
   this.load.audio('backgroundMusic', 'https://mushiimushii1.github.io/mushii/basesong.wav');
-  // Add load event listeners for debugging
   this.load.on('filecomplete-audio-backgroundMusic', () => console.log('Audio file loaded successfully'));
   this.load.on('loaderror', (file) => console.error('Audio load error:', file.key, file.src));
 }
@@ -62,7 +61,7 @@ function create() {
     return Phaser.Math.Distance.Between(wanderer.x, wanderer.y, amanita.x, amanita.y) < 40;
   }, this);
 
-  // Audio setup with more debugging
+  // Audio setup with fallback
   try {
     this.backgroundMusic = this.sound.add('backgroundMusic', { loop: true, volume: 0.25 });
     console.log('Background music object created');
@@ -82,7 +81,7 @@ function create() {
 
   button.setInteractive();
   button.on('pointerdown', () => {
-    playMusic.call(this); // Call reusable play function
+    playMusic.call(this);
     this.gameStarted = true;
     this.input.keyboard.enabled = true;
     button.destroy();
@@ -92,23 +91,40 @@ function create() {
   });
 }
 
-// Reusable function to play music
+// Reusable function to play music with fallback
 function playMusic() {
+  if (!this.backgroundMusic) {
+    console.warn('Background music not initialized, attempting to reinitialize');
+    try {
+      this.backgroundMusic = this.sound.add('backgroundMusic', { loop: true, volume: 0.25 });
+      console.log('Background music reinitialized');
+    } catch (e) {
+      console.error('Failed to reinitialize background music:', e);
+      return;
+    }
+  }
+
   if (this.sound.context.state === 'suspended') {
     this.sound.context.resume().then(() => {
       console.log('Audio context resumed');
-      if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
+      if (!this.backgroundMusic.isPlaying) {
         this.backgroundMusic.play();
         console.log('Music started playing from resume');
+      } else {
+        console.log('Music already playing after resume');
       }
-    }).catch(e => console.error('Failed to resume audio context:', e));
+    }).catch(e => {
+      console.error('Failed to resume audio context:', e);
+      if (!this.backgroundMusic.isPlaying) {
+        this.backgroundMusic.play(); // Try anyway
+        console.log('Attempted to play music despite resume failure');
+      }
+    });
   } else {
-    if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
+    if (!this.backgroundMusic.isPlaying) {
       this.backgroundMusic.play();
       console.log('Music started playing directly');
-    } else if (!this.backgroundMusic) {
-      console.error('Background music object not initialized');
-    } else if (this.backgroundMusic.isPlaying) {
+    } else {
       console.log('Music is already playing');
     }
   }
@@ -173,7 +189,8 @@ function createDebugMusicButton() {
 
   debugButton.setInteractive();
   debugButton.on('pointerdown', () => {
-    playMusic.call(this); // Reuse the play function
+    console.log('Debug button pressed');
+    playMusic.call(this);
   });
 }
 
