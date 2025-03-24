@@ -48,7 +48,8 @@ function create() {
   this.spores = this.physics.add.group();
   for (let i = 0; i < 20; i++) {
     let spore = this.spores.create(Math.random() * 700 + 50, Math.random() * (710 - 240) + 240, 'spore').setScale(1.25);
-    spore.anims.play('spore_float', true);
+    // Offset animation with random delay (0 to 1600ms)
+    spore.anims.play({ key: 'spore_float', delay: Math.random() * 1600 }, true);
   }
   this.physics.add.overlap(this.wanderer, this.spores, collectSpore, (wanderer, spore) => {
     return Phaser.Math.Distance.Between(wanderer.x, wanderer.y, spore.x, spore.y) < 30;
@@ -86,7 +87,7 @@ function create() {
     this.input.keyboard.enabled = true;
     button.destroy();
     buttonText.destroy();
-    createJoystick.call(this); // Only joystick, no debug button
+    createJoystick.call(this);
   });
 }
 
