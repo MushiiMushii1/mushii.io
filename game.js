@@ -24,6 +24,9 @@ function preload() {
   this.load.spritesheet('amanita', 'https://i.imgur.com/HAwLwuU.png', { frameWidth: 32, frameHeight: 32 });
   this.load.spritesheet('spore', 'https://i.imgur.com/HEoiyr4.png', { frameWidth: 32, frameHeight: 32 });
   this.load.audio('backgroundMusic', 'https://mushiimushii1.github.io/mushii/basesong.wav');
+  // Add load event listeners for debugging
+  this.load.on('filecomplete-audio-backgroundMusic', () => console.log('Audio file loaded successfully'));
+  this.load.on('loaderror', (file) => console.error('Audio load error:', file.key, file.src));
 }
 
 function create() {
@@ -59,9 +62,12 @@ function create() {
     return Phaser.Math.Distance.Between(wanderer.x, wanderer.y, amanita.x, amanita.y) < 40;
   }, this);
 
-  // Audio setup
+  // Audio setup with more debugging
   try {
     this.backgroundMusic = this.sound.add('backgroundMusic', { loop: true, volume: 0.25 });
+    console.log('Background music object created');
+    this.backgroundMusic.on('play', () => console.log('Music play event triggered'));
+    this.backgroundMusic.on('error', (e) => console.error('Music playback error:', e));
   } catch (e) {
     console.error('Failed to initialize background music:', e);
   }
@@ -76,32 +82,38 @@ function create() {
 
   button.setInteractive();
   button.on('pointerdown', () => {
-    // Try to play music on start
-    if (this.sound.context.state === 'suspended') {
-      this.sound.context.resume().then(() => {
-        console.log('Audio context resumed');
-        if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
-          this.backgroundMusic.play();
-          console.log('Music started playing');
-        }
-      }).catch(e => console.error('Failed to resume audio context:', e));
-    } else {
-      if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
-        this.backgroundMusic.play();
-        console.log('Music started playing');
-      }
-    }
-
+    playMusic.call(this); // Call reusable play function
     this.gameStarted = true;
     this.input.keyboard.enabled = true;
     button.destroy();
     buttonText.destroy();
     createJoystick.call(this);
-    createDebugMusicButton.call(this); // Add debug button
+    createDebugMusicButton.call(this);
   });
 }
 
-// Function to create virtual joystick
+// Reusable function to play music
+function playMusic() {
+  if (this.sound.context.state === 'suspended') {
+    this.sound.context.resume().then(() => {
+      console.log('Audio context resumed');
+      if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
+        this.backgroundMusic.play();
+        console.log('Music started playing from resume');
+      }
+    }).catch(e => console.error('Failed to resume audio context:', e));
+  } else {
+    if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
+      this.backgroundMusic.play();
+      console.log('Music started playing directly');
+    } else if (!this.backgroundMusic) {
+      console.error('Background music object not initialized');
+    } else if (this.backgroundMusic.isPlaying) {
+      console.log('Music is already playing');
+    }
+  }
+}
+
 function createJoystick() {
   const joystickRadius = 50;
   const knobRadius = 20;
@@ -152,30 +164,16 @@ function createJoystick() {
   });
 }
 
-// Function to create debug music button
 function createDebugMusicButton() {
-  const buttonX = 250; // Right of joystick
-  const buttonY = this.scale.height - 50; // Near bottom
+  const buttonX = 250;
+  const buttonY = this.scale.height - 50;
   const debugButton = this.add.rectangle(buttonX, buttonY, 100, 40, 0x666666, 0.7);
   debugButton.setStrokeStyle(2, 0xffffff);
   const debugText = this.add.text(buttonX, buttonY, 'Play Music', { font: '16px monospace', color: '#ffffff' }).setOrigin(0.5, 0.5);
 
   debugButton.setInteractive();
   debugButton.on('pointerdown', () => {
-    if (this.sound.context.state === 'suspended') {
-      this.sound.context.resume().then(() => {
-        console.log('Debug: Audio context resumed');
-        if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
-          this.backgroundMusic.play();
-          console.log('Debug: Music started playing');
-        }
-      }).catch(e => console.error('Debug: Failed to resume audio context:', e));
-    } else {
-      if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
-        this.backgroundMusic.play();
-        console.log('Debug: Music started playing');
-      }
-    }
+    playMusic.call(this); // Reuse the play function
   });
 }
 
