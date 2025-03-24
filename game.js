@@ -76,55 +76,59 @@ function create() {
 
   button.setInteractive();
   button.on('pointerdown', () => {
-    if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
-      this.backgroundMusic.play();
+    // Resume audio context for mobile
+    if (this.sound.context.state === 'suspended') {
+      this.sound.context.resume().then(() => {
+        console.log('Audio context resumed');
+        if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
+          this.backgroundMusic.play();
+          console.log('Music started playing');
+        }
+      }).catch(e => console.error('Failed to resume audio context:', e));
+    } else {
+      if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
+        this.backgroundMusic.play();
+        console.log('Music started playing');
+      }
     }
+
     this.gameStarted = true;
     this.input.keyboard.enabled = true;
     button.destroy();
     buttonText.destroy();
-    // Add joystick after starting the game
     createJoystick.call(this);
   });
 }
 
-// Function to create virtual joystick
 function createJoystick() {
-  // Joystick properties
   const joystickRadius = 50;
   const knobRadius = 20;
-  const baseX = 100; // Center X of joystick
-  const baseY = this.scale.height - 100; // Center Y, near bottom of screen
+  const baseX = 100;
+  const baseY = this.scale.height - 100;
 
-  // Joystick base (static circle)
   this.joystickBase = this.add.circle(baseX, baseY, joystickRadius, 0x666666, 0.7);
   this.joystickBase.setStrokeStyle(2, 0xffffff);
 
-  // Joystick knob (draggable)
   this.joystickKnob = this.add.circle(baseX, baseY, knobRadius, 0x999999, 0.9);
   this.joystickKnob.setStrokeStyle(2, 0xffffff);
   this.joystickKnob.setInteractive();
   this.input.setDraggable(this.joystickKnob);
 
-  // Joystick movement state
   this.joystick = {
     active: false,
-    dx: 0, // Delta X from center
-    dy: 0  // Delta Y from center
+    dx: 0,
+    dy: 0
   };
 
-  // Drag events
   this.joystickKnob.on('dragstart', () => {
     this.joystick.active = true;
   });
 
   this.joystickKnob.on('drag', (pointer, dragX, dragY) => {
-    // Calculate distance from base center
     const dx = dragX - baseX;
     const dy = dragY - baseY;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Limit knob movement to joystick radius
     if (distance <= joystickRadius) {
       this.joystickKnob.x = dragX;
       this.joystickKnob.y = dragY;
@@ -134,7 +138,6 @@ function createJoystick() {
       this.joystickKnob.y = baseY + Math.sin(angle) * joystickRadius;
     }
 
-    // Store normalized delta for movement
     this.joystick.dx = (this.joystickKnob.x - baseX) / joystickRadius;
     this.joystick.dy = (this.joystickKnob.y - baseY) / joystickRadius;
   });
@@ -143,7 +146,7 @@ function createJoystick() {
     this.joystick.active = false;
     this.joystick.dx = 0;
     this.joystick.dy = 0;
-    this.joystickKnob.setPosition(baseX, baseY); // Reset to center
+    this.joystickKnob.setPosition(baseX, baseY);
   });
 }
 
@@ -156,7 +159,6 @@ function update() {
   let movingLeft = false;
   let movingUp = false;
 
-  // Keyboard controls (desktop)
   if (this.cursors.left.isDown) {
     this.wanderer.setVelocityX(-250);
     isMoving = true;
@@ -177,9 +179,8 @@ function update() {
     isMoving = true;
   }
 
-  // Joystick controls (mobile)
   if (this.joystick && this.joystick.active) {
-    const speed = 250; // Match keyboard speed
+    const speed = 250;
     this.wanderer.setVelocityX(this.joystick.dx * speed);
     this.wanderer.setVelocityY(this.joystick.dy * speed);
 
@@ -190,7 +191,7 @@ function update() {
         else movingLeft = true;
       } else {
         if (this.joystick.dy < 0) movingUp = true;
-        else isMoving = true; // Down movement uses default 'walk'
+        else isMoving = true;
       }
     }
   }
