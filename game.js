@@ -76,7 +76,7 @@ function create() {
 
   button.setInteractive();
   button.on('pointerdown', () => {
-    // Resume audio context for mobile
+    // Try to play music on start
     if (this.sound.context.state === 'suspended') {
       this.sound.context.resume().then(() => {
         console.log('Audio context resumed');
@@ -97,9 +97,11 @@ function create() {
     button.destroy();
     buttonText.destroy();
     createJoystick.call(this);
+    createDebugMusicButton.call(this); // Add debug button
   });
 }
 
+// Function to create virtual joystick
 function createJoystick() {
   const joystickRadius = 50;
   const knobRadius = 20;
@@ -147,6 +149,33 @@ function createJoystick() {
     this.joystick.dx = 0;
     this.joystick.dy = 0;
     this.joystickKnob.setPosition(baseX, baseY);
+  });
+}
+
+// Function to create debug music button
+function createDebugMusicButton() {
+  const buttonX = 250; // Right of joystick
+  const buttonY = this.scale.height - 50; // Near bottom
+  const debugButton = this.add.rectangle(buttonX, buttonY, 100, 40, 0x666666, 0.7);
+  debugButton.setStrokeStyle(2, 0xffffff);
+  const debugText = this.add.text(buttonX, buttonY, 'Play Music', { font: '16px monospace', color: '#ffffff' }).setOrigin(0.5, 0.5);
+
+  debugButton.setInteractive();
+  debugButton.on('pointerdown', () => {
+    if (this.sound.context.state === 'suspended') {
+      this.sound.context.resume().then(() => {
+        console.log('Debug: Audio context resumed');
+        if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
+          this.backgroundMusic.play();
+          console.log('Debug: Music started playing');
+        }
+      }).catch(e => console.error('Debug: Failed to resume audio context:', e));
+    } else {
+      if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
+        this.backgroundMusic.play();
+        console.log('Debug: Music started playing');
+      }
+    }
   });
 }
 
