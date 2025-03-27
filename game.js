@@ -387,8 +387,8 @@ function collectSpore(wanderer, spore) {
 function resonate(wanderer, amanita) {
   if (this.sporeCount >= 1) {
     this.sporeCount -= 1;
-    let vibe = prompt('Tune your vibe (1-10):');
-    if (vibe == 5) {
+    let vibe = prompt('Tune your vibe (1-5):');
+    if (vibe == 3) {
       this.sporeCount += 3;
       const graphics = this.add.graphics();
       graphics.fillStyle(0x000000, 0.8);
